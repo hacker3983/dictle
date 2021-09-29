@@ -1,0 +1,81 @@
+#!/bin/bash
+
+files=(list split_int split_chars reverse_int reverse_chars)
+max_test=0
+
+for file in ${files[@]}
+do
+	if [ ! -f $file ]; then
+		gcc $file.c list.o -o "$file"
+	fi
+	max_test=$(($max_test + 1))
+done
+
+function print_test() {
+	echo -e "\033[33mTesting $1\033[0m:"
+}
+
+function test_cases () {
+	passed_test=0
+	print_test "list"
+	./list | tee output.txt
+	diff expected_outputs/list.txt output.txt
+	if [ $? == 0 ]; then
+		passed_test=$(($passed_test + 1))
+	fi
+	rm output.txt
+
+	print_test "split_int"
+	ints=(10 4096 89 58)
+	for int in ${ints[@]}
+	do
+		echo -n "$int: "
+		./split_int $int | tee -a output.txt
+	done
+	diff output.txt expected_outputs/ints.txt
+	if [ $? == 0 ]; then
+		passed_test=$(($passed_test + 1))
+	fi
+	rm output.txt
+
+	print_test "split_chars"
+	strs=(Hello 0123456789 America England)
+	for str in ${strs[@]}
+	do
+		echo -n "$str: "
+		./split_chars $str | tee -a output.txt
+	done
+	diff output.txt expected_outputs/chars.txt
+	if [ $? == 0 ]; then
+		passed_test=$((passed_test + 1))
+	fi
+	rm output.txt
+
+	print_test "reverse_int"
+	for int in ${ints[@]}
+	do
+		echo -n "$int: "
+		./reverse_int $int | tee -a output.txt
+	done
+	diff output.txt expected_outputs/ints2.txt
+	if [ $? == 0 ]; then
+		passed_test=$((passed_test + 1))
+	fi
+	rm output.txt
+
+	print_test "reverse_chars"
+	for str in ${strs[@]}
+	do
+		echo -n "$str: "
+		./reverse_chars $str | tee -a output.txt
+	done
+	diff output.txt expected_outputs/chars2.txt
+	if [ $? == 0 ]; then
+		passed_test=$((passed_test + 1))
+	fi
+#	rm output.txt
+	return $passed_test
+}
+test_cases
+passed_test=$?
+echo "$passed_test out of $max_test test cases successfully passed!"
