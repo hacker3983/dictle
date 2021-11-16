@@ -1,4 +1,5 @@
 #include "list.h"
+int LIST_RECURSION = 0;
 
 list_t* list_create(int type, ...) {
 	list_t* new_node = calloc(1, sizeof(list_t));
@@ -33,7 +34,10 @@ list_t* list_create(int type, ...) {
 				new_node->floatt = va_arg(varg, long double);
 			#endif
 			break;
-		default: list_adderr(&new_node, TYPE_ERROR, "invalid type \033[1m'%c'\033[0m\n", type);
+		case LIST:
+			new_node->type = LIST;
+			new_node->list = va_arg(varg, list_t*);
+			break;
 	}
 	new_node->tail = new_node;
 	va_end(varg);
@@ -55,7 +59,7 @@ void list_insert(list_t** list, int type, ...) {
 				new_node = list_create(type, va_arg(varg, long double));
 			#endif
 			break;
-	//	default: list_adderr(list, TYPE_ERROR, "invalid type \033[1m'%d'\033[0m\n", type);
+		case LIST: new_node = list_create(type, va_arg(varg, list_t*)); break;	
 	}
 	if(*list == NULL) {
 		*list = new_node;
@@ -82,7 +86,7 @@ void list_append(list_t** list, int type, ...) {
 				new_node = list_create(type, va_arg(varg, long double));
 			#endif
 			break;
-	//	default: list_adderr(list, TYPE_ERROR, "invalid type \033[1m'%d'\033[0m\n", type);
+		case LIST: new_node = list_create(type, va_arg(varg, list_t*));	
 	}
 	va_end(varg);
 	if(*list == NULL) {
@@ -109,7 +113,7 @@ void list_insert_optype(list_t** list, int optype, int type, ...) {
 					list_insert(list, type, va_arg(varg, long double));
 				#endif
 				break;
-			//default: list_adderr(list, TYPE_ERROR, "invalid type '%d'", type);
+			case LIST: list_insert(list, type, va_arg(varg, list_t*));	
 		}
 		va_end(varg);
 		return;
@@ -125,7 +129,7 @@ void list_insert_optype(list_t** list, int optype, int type, ...) {
 				list_append(list, type, va_arg(varg, long double));
 			#endif
 			break;
-	//	default: list_adderr(list, TYPE_ERROR, "invalid type '%d'", type);
+		case LIST: list_append(list, type, va_arg(varg, list_t*));
 	}
 	va_end(varg);
 }
@@ -149,8 +153,7 @@ void list_insertf(list_t** list, int optype, char* format, ...) {
 							list_insert_optype(list, optype, FLOAT, va_arg(varg, long double));
 						#endif
 						break;
-				//	default: list_adderr(list, FORMAT_ERROR, "invalid conversion specifier \033[1m'%c'\033[0m\n",
-				//			format[i]);
+					case 'l': list_insert_optype(list, optype, LIST, va_arg(varg, list_t*)); break;
 				}
 				continue;
 			}
@@ -196,40 +199,6 @@ void list_adderr(list_t** list, int error_type, const char* format, ...) {
 	va_end(varg);
 }
 
-void list_print(list_t* list) {
-	printf("[");
-	while(list != NULL) {
-		switch(list->type) {
-			case INTEGER: printf("%d", list->integer); break;
-			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
-			case CHARACTER: printf("'%c'", list->integer); break;
-			case FLOAT: printf("%Lf", list->floatt); break;
-		}
-		if(list->next != NULL) {
-			printf(", ");
-		}
-		list = list->next;
-	}
-	printf("]\n");
-}
-
-void list_printf(list_t* list, const char* sep, char end) {
-	printf("[");
-	while(list != NULL) {
-		switch(list->type) {
-			case INTEGER: printf("%d", list->integer); break;
-			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
-			case CHARACTER: printf("'%c'", list->integer); break;
-			case FLOAT: printf("%Lf", list->floatt); break;
-		}
-		if(list->next != NULL) {
-			printf("%s", sep);
-		}
-		list = list->next;
-	}
-	printf("]%c", end);
-}
-
 void* list_index(list_t* list, size_t index) {
 	size_t i=0;
 	while(list != NULL) {
@@ -243,6 +212,8 @@ void* list_index(list_t* list, size_t index) {
 						return (double*)&list->floatt;
 					#endif
 					return &list->floatt;
+				case LIST:
+					return list->list;
 			}
 		}
 		i++;
@@ -260,12 +231,98 @@ int list_geterror(list_t* list) {
 	return 0;
 }
 
+void list_printf(list_t* list, const char* sep, char end) {
+	list_t* temp = NULL;
+	printf("[");
+	while(list != NULL) {
+		switch(list->type) {
+			case INTEGER: printf("%d", list->integer); break;
+			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
+			case CHARACTER: printf("'%c'", list->integer); break;
+			case FLOAT: printf("%Lf", list->floatt); break;
+			case LIST:
+				__list_print_recursive(list, sep, end, false);
+				break;
+		}
+		if(list->next != NULL) {
+			printf("%s", sep);
+		}
+		list = list->next;
+	}
+	printf("]%c", end);
+}
+
+void list_print(list_t* list) {
+	printf("[");
+	while(list != NULL) {
+		switch(list->type) {
+			case INTEGER: printf("%d", list->integer); break;
+			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
+			case CHARACTER: printf("'%c'", list->integer); break;
+			case FLOAT: printf("%Lf", list->floatt); break;
+			case LIST:
+				__list_print_recursive(list->list, ", ", '\0', false);
+				break;
+		}
+		if(list->next != NULL) {
+			printf(", ");
+		}
+		list = list->next;
+	}
+	printf("]\n");
+}
+
+list_t* __list_print_recursive(list_t* list, const char* sep, char end, int pb) {
+	if(pb) printf("[");
+	while(list != NULL) {
+		switch(list->type) {
+			case INTEGER: printf("%d", list->integer); break;
+			case STRING: printf("\"%s\"", list->string); break;
+			case CHARACTER: printf("'%d'", list->integer); break;
+			case FLOAT: printf("%Lf", list->floatt); break;
+			case LIST:
+				__list_print_recursive(list->list, sep, end, true);
+				break;
+		}
+		if(list->next != NULL) {
+			printf("%s", sep);
+		}
+		list = list->next;
+	}
+	if(pb) printf("]%c", end);
+	return list;
+}
+
+bool list_streq(const char* s1, const char* s2) {
+	if(s1 == NULL || s2 == NULL) { return false; }
+	if(strcmp(s1, s2) == 0) {
+		return true;
+	}
+	return false;
+}
+
+void list_safe_free(list_t** list) {
+	while(*list != NULL) {
+		list_t* temp = (*list)->next;
+		if((*list)->type == STRING && (*list)->string != NULL) { free((*list)->string); (*list)->string = NULL; }
+		if((*list)->type == LIST && (*list)->list != NULL) {
+			list_free((*list)->list);
+		}
+		if((*list)->error != NULL) { free((*list)->error); }
+		if(*list != NULL) { free(*list); *list = NULL; }
+		*list = temp;
+	}
+}
+
 void list_free(list_t* list) {
 	while(list != NULL) {
 		list_t* temp = list->next;
 		if(list->type == STRING && list->string != NULL) { free(list->string); }
+		if(list->type == LIST && list->list != NULL) {
+			list_free(list->list);
+		}
 		if(list->error != NULL) { free(list->error); }
-		free(list);
+		if(list != NULL) { free(list); }
 		list = temp;
 	}
 }

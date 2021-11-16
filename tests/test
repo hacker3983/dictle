@@ -73,7 +73,7 @@ function test_cases () {
 	if [ $? == 0 ]; then
 		passed_test=$((passed_test + 1))
 	fi
-#	rm output.txt
+	rm output.txt
 	return $passed_test
 }
 test_cases
