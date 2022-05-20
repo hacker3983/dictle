@@ -1,4 +1,5 @@
 #include "dictionary.h"
+#include "string.h"
 
 /* How the dictionary should look?
 {"Person":{"Name":"John Doe", "Age": 10},
@@ -44,7 +45,7 @@ dict_t* dict_create(int ktype, int type, ...) {
 			break;
 		case BOOL:
 			dict->ktype = BOOL;
-			dict->kint = va_arg(varg, int);
+			dict->kint = (bool)va_arg(varg, int);
 			break;
 	}
 	switch(type) {
@@ -81,11 +82,11 @@ dict_t* dict_create(int ktype, int type, ...) {
 			break;
 		case DICT:
 			dict->type = DICT;
-			dict->left = va_arg(varg, dict_t*);
+			dict->dict = va_arg(varg, dict_t*);
 			break;
 		case BOOL:
 			dict->type = BOOL;
-			dict->integer = va_arg(varg, int);
+			dict->integer = (bool)va_arg(varg, int);
 			break;
 	}
 	dict->tail = dict;
@@ -110,336 +111,126 @@ dict_t* dict_create(int ktype, int type, ...) {
    >> - Tells dict_insertf we want to append or insert a node in the left node
    << - Tells dict_insertf or dict_append we want to append or insert a node in the right node
 */
-void dict_insert(dict_t** dict, int ktype, int type, ...) {
-	va_list varg;
-	va_start(varg, type);
-	dict_t* new_node = NULL, *temp = *dict;
-	int key_int;
-	char* key_string;
-	long double key_float;
-	switch(ktype) {
-		case INTEGER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case STRING:
-			key_string = va_arg(varg, char*);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_string, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_string, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_string, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-			}
-			break;
-		case CHARACTER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case FLOAT:
-			#ifdef _WIN32
-				key_float = va_arg(varg, double);
-			#else
-				key_float = va_arg(varg, long double);
-			#endif
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_float, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_float, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_float, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-			}
-			break;
-		case BOOL:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
+
+string_t dict_tostring(dict_t* dict) {
+	string_t string, result = {0};
+	string_init(&string, "{");
+	while(dict != NULL) {
+		switch(dict->ktype) {
+			case INTEGER:
+				switch(dict->type) {
+					case INTEGER:   string_concat(&string, "%d: %d", dict->kint, dict->integer); break;
+					case STRING:     string_concat(&string, "%d: \"%s\"", dict->kint, dict->string); break;
+					case FLOAT:      string_concat(&string, "%d: %f", dict->kint, dict->floatt); break;
+					case BOOL: string_concat(&string, "%d: %b", dict->kint, dict->integer); break;
+					case DICT:
+						result = dict_tostring(dict->dict);
+						string_concat(&string, "%d: %S", dict->kint, result);
+						string_free(&result);
+						break;
+					case LIST:
+						result = list_tostring(dict->list);
+						string_concat(&string, "%d: %S", result);
+						string_free(&result);
+						break;
+				}
+				break;
+			case CHARACTER:
+				switch(dict->type) {
+					case INTEGER:   string_concat(&string, "%c: %d", dict->kint, dict->integer); break;
+					case STRING:     string_concat(&string, "%c: \"%s\"", dict->kint, dict->string); break;
+					case CHARACTER: string_concat(&string, "%c: %c", dict->kint, dict->integer); break;
+					case FLOAT:      string_concat(&string, "%c: %f", dict->kint, dict->floatt); break;
+					case BOOL: string_concat(&string, "%c: %b", dict->kint, dict->integer); break;
+					case DICT:
+						result = dict_tostring(dict->dict);
+						string_concat(&string, "%c: %S", dict->kint, result);
+						string_free(&result);
+						break;
+					case LIST:
+						result = list_tostring(dict->list);
+						string_concat(&string, "%c: %S\"", result);
+						string_free(&result);
+						break;
+				}
+				break;
+			case STRING:
+				switch(dict->type) {
+					case INTEGER:   string_concat(&string, "\"%s\": %d", dict->kstring, dict->integer); break;
+					case STRING:     string_concat(&string, "\"%s\": \"%s\"", dict->kstring, dict->string); break;
+					case CHARACTER: string_concat(&string, "\"%s\": %c", dict->kstring, dict->integer); break;
+					case FLOAT:      string_concat(&string, "\"%s\": %f", dict->kstring, dict->floatt); break;
+					case BOOL: string_concat(&string, "\"%s\": %b", dict->kstring, dict->integer); break;
+					case DICT:
+						result = dict_tostring(dict->dict);
+						string_concat(&string, "\"%s\": %S", dict->kstring, result);
+						string_free(&result);
+						break;
+					case LIST:
+						result = list_tostring(dict->list);
+						string_concat(&string, "\"%s\": %S", dict->kstring, result);
+						string_free(&result);
+						break;
+				}
+				break;
+			case FLOAT:
+				switch(dict->type) {
+					case INTEGER:   string_concat(&string, "%f: %d", dict->kfloat, dict->integer); break;
+					case STRING:     string_concat(&string, "%f: \"%s\"", dict->kfloat, dict->string); break;
+					case CHARACTER: string_concat(&string, "%f: %c", dict->kfloat, dict->integer); break;
+					case FLOAT:      string_concat(&string, "%f: %f", dict->kfloat, dict->floatt); break;
+					case BOOL: string_concat(&string, "%f: %b", dict->kfloat, dict->integer); break;
+					case DICT:
+						result = dict_tostring(dict->dict);
+						string_concat(&string, "%f: %S", dict->kfloat, result);
+						string_free(&result);
+						break;
+					case LIST:
+						result = list_tostring(dict->list);
+						string_concat(&string, "%f: %S", dict->kfloat, result);
+						string_free(&result);
+						break;			
+				}
+				break;
+			case BOOL:
+				switch(dict->type) {
+					case INTEGER:   string_concat(&string, "%b: %d", dict->kint, dict->integer); break;
+					case STRING:     string_concat(&string, "%b: \"%s\"", dict->kint, dict->string); break;
+					case CHARACTER: string_concat(&string, "%b: %c", dict->kint, dict->integer); break;
+					case FLOAT:      string_concat(&string, "%b: %f", dict->kint, dict->floatt); break;
+					case BOOL: string_concat(&string, "%b: %b", dict->kint, dict->integer); break;
+					case DICT:
+						result = dict_tostring(dict->dict);
+						string_concat(&string, "%b: %S", dict->kint, result);
+						string_free(&result);
+						break;
+					case LIST:
+						result = list_tostring(dict->list);
+						string_concat(&string, "%b: %S", result);
+						string_free(&result);
+						break;
+				}
+				break;
+		}
+		if(dict->right != NULL) {
+			string_append(&string, ", ");
+		}
+		dict = dict->right;
 	}
-	va_end(varg);
-	if(*dict == NULL) {
-		*dict = new_node;
-		return;
-	}
-	new_node->right = temp;
-	new_node->tail = new_node->right->tail;
-	*dict = new_node;
+	string_push_char(&string, '}');
+	return string;
 }
 
-void dict_append(dict_t** dict, int ktype, int type, ...) {
-       	va_list varg;
-	va_start(varg, type);
-	dict_t* new_node = NULL;
-	int key_int;
-	char* key_string;
-	long double key_float;
-	dict_t* query = NULL;
-	switch(ktype) {
-		case INTEGER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case STRING:
-			key_string = va_arg(varg, char*);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_string, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_string, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_string, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_string, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_string, va_arg(varg, int)); break;
-			}
-			break;
-		case CHARACTER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case FLOAT:
-			#ifdef _WIN32
-				key_float = va_arg(varg, double);
-			#else
-				key_float = va_arg(varg, long double);
-			#endif
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_float, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_float, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_float, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_float, va_arg(varg, int)); break;
-			}
-			break;
-		case BOOL:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case CHARACTER: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, double));
-					#else
-						new_node = dict_create(ktype, type, key_float, va_arg(varg, long double));
-					#endif
-					break;
-				case STRING: new_node = dict_create(ktype, type, key_int, va_arg(varg, char*)); break;
-				case LIST: new_node = dict_create(ktype, type, key_int, va_arg(varg, list_t*)); break;
-				case DICT: new_node = dict_create(ktype, type, key_int, va_arg(varg, dict_t*)); break;
-				case BOOL: new_node = dict_create(ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-	}
-	va_end(varg);
-	if(*dict == NULL) {
-		*dict = new_node;
-		return;
-	}
-	(*dict)->tail->right = new_node;
-	(*dict)->tail = (*dict)->tail->right;
-}
-void dict_set_key(dict_t** dict, int ktype, int type, ...) {
-	va_list varg;
-	va_start(varg, type);
-	dict_t* result = NULL;
-	int key_int;
-	char* key_string;
-	long double key_float;
-	switch(ktype) {
-		case INTEGER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case STRING: dict_append(dict, ktype, type, key_int, va_arg(varg, char*)); break;
-				case CHARACTER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						dict_append(dict, ktype, type, key_int, va_arg(varg, double));
-					#else
-						dict_append(dict, ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case BOOL: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case CHARACTER:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case STRING: dict_append(dict, ktype, type, key_int, va_arg(varg, char*)); break;
-				case CHARACTER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						dict_append(dict, ktype, type, key_int, va_arg(varg, double));
-					#else
-						dict_append(dict, ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case BOOL: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-		case STRING:
-			key_string = va_arg(varg, char*);
-			switch(type) {
-				case INTEGER: dict_append(dict, ktype, type, key_string, va_arg(varg, int)); break;
-				case STRING: dict_append(dict, ktype, type, key_string, va_arg(varg, char*)); break;
-				case CHARACTER: dict_append(dict, ktype, type, key_string, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						dict_append(dict, ktype, type, key_string, va_arg(varg, double));
-					#else
-						dict_append(dict, ktype, type, key_string, va_arg(varg, long double));
-					#endif
-					break;
-				case BOOL: dict_append(dict, ktype, type, key_string, va_arg(varg, int)); break;
-			}
-			break;
-		case FLOAT:
-			#ifdef _WIN32
-				key_float = va_arg(varg, double);
-			#else
-				key_float = va_arg(varg, long double);
-			#endif
-			switch(type) {
-				case INTEGER: dict_append(dict, ktype, type, key_float, va_arg(varg, int)); break;
-				case STRING: dict_append(dict, ktype, type, key_float, va_arg(varg, char*)); break;
-				case CHARACTER: dict_append(dict, ktype, type, key_float, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						dict_append(dict, ktype, type, key_float, va_arg(varg, double));
-					#else
-						dict_append(dict, ktype, type, key_float, va_arg(varg, long double));
-					#endif
-					break;
-				case BOOL: dict_append(dict, ktype, type, key_float, va_arg(varg, int)); break;
-			}
-			break;
-		case BOOL:
-			key_int = va_arg(varg, int);
-			switch(type) {
-				case INTEGER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case STRING: dict_append(dict, ktype, type, key_int, va_arg(varg, char*)); break;
-				case CHARACTER: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-				case FLOAT:
-					#ifdef _WIN32
-						dict_append(dict, ktype, type, key_int, va_arg(varg, double));
-					#else
-						dict_append(dict, ktype, type, key_int, va_arg(varg, long double));
-					#endif
-					break;
-				case BOOL: dict_append(dict, ktype, type, key_int, va_arg(varg, int)); break;
-			}
-			break;
-	}
-	va_end(varg);
-}
 /*void dict_move(dict_t** dict, int dir) {
 	
 }*/
-// TODO fix dict_query TODO remove this comment
-dict_t* dict_query(dict_t** result, dict_t* dict, int ktype, ...) {
+dict_t* dict_query(dict_t** result, dict_t** dict, int ktype, ...) {
 	va_list varg;
 	va_start(varg, ktype);
 	int key_int = 0;
 	long double key_float = 0;
 	char* key_string = NULL;
+	dict_t* dict_ref = *dict;
 	switch(ktype) {
 		case INTEGER: key_int = va_arg(varg, int); break;
 		case STRING: key_string = va_arg(varg, char*); break;
@@ -451,57 +242,56 @@ dict_t* dict_query(dict_t** result, dict_t* dict, int ktype, ...) {
 				key_float = va_arg(varg, long double);
 			#endif
 			break;
-		case BOOL: key_int = va_arg(varg, int); break;
+		case BOOL: key_int = (bool)va_arg(varg, int); break;
 	}
-	while(dict != NULL) {
-		if(dict->ktype == ktype) {
-			switch(dict->ktype) {
+	while(dict_ref != NULL) {
+		if(dict_ref->ktype == ktype) {
+			switch(dict_ref->ktype) {
 				case INTEGER:
-					if(dict->kint == key_int) {
-						printf("Found integer key: %d\n", dict->kint);
-						*result = dict;
-						if(dict->type == DICT) {
-							*result = dict->left;
+					if(dict_ref->kint == key_int) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
 						}
 						va_end(varg);
 						return *result;
 					}
 					break;
 				case STRING:
-					if(list_streq(dict->kstring, key_string)) {
-						*result = dict;
-						if(dict->type == DICT) {
-							*result = dict->left;
+					if(list_streq(dict_ref->kstring, key_string)) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
 						}
 						va_end(varg);
 						return *result;
 					}
 					break;
 				case CHARACTER:
-					if(dict->kint == key_int) {
-						*result = dict;
-						if(dict->type == DICT) {
-							*result = dict->left;
+					if(dict_ref->kint == key_int) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
 						}
 						va_end(varg);
 						return *result;
 					}
 					break;
 				case FLOAT:
-					if(dict->kfloat == key_float) {
-						*result = dict;
-						if(dict->type == DICT) {
-							*result = dict->left;
+					if(dict_ref->kfloat == key_float) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
 						}
 						va_end(varg);
 						return *result;
 					}
 					break;
 				case BOOL:
-					if(dict->kint == key_int) {
-						*result = dict;
-						if(dict->type == DICT) {
-							*result = dict->left;
+					if(dict_ref->kint == key_int) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
 						}
 						va_end(varg);
 						return *result;
@@ -509,13 +299,13 @@ dict_t* dict_query(dict_t** result, dict_t* dict, int ktype, ...) {
 					break;
 			}
 		}
-		dict = dict->right;
+		dict_ref = dict_ref->right;
 	}
 	va_end(varg);
 	return *result;
 }
 
-dict_t* dict_get(dict_t* dict, int ktype, ...) {
+dict_t* dict_get(dict_t** dict, int ktype, ...) {
 	va_list varg;
 	va_start(varg, ktype);
 	dict_t* result = NULL;
@@ -524,7 +314,6 @@ dict_t* dict_get(dict_t* dict, int ktype, ...) {
 		case STRING: dict_query(&result, dict, ktype, va_arg(varg, char*)); break;
 		case CHARACTER: dict_query(&result, dict, ktype, va_arg(varg, int)); break;
 		case FLOAT:
-			dict_query(&result, dict, ktype, va_arg(varg, double));
 			#if _WIN32
 				dict_query(&result, dict, ktype, va_arg(varg, double));
 			#else
@@ -557,17 +346,17 @@ bool dict_has_key(dict_t* dict, int ktype, ...) {
 	va_start(varg, ktype);
 	dict_t* query = NULL;
 	switch(ktype) {
-		case INTEGER: query = dict_get(dict, ktype, va_arg(varg, int)); break;
-		case STRING: query = dict_get(dict, ktype, va_arg(varg, char*)); break;
-		case CHARACTER: query = dict_get(dict, ktype, va_arg(varg, int)); break;
+		case INTEGER: query = dict_get(&dict, ktype, va_arg(varg, int)); break;
+		case STRING: query = dict_get(&dict, ktype, va_arg(varg, char*)); break;
+		case CHARACTER: query = dict_get(&dict, ktype, va_arg(varg, int)); break;
 		case FLOAT:
 			#if _WIN32
-				query = dict_get(dict, ktype, va_arg(varg, double));
+				query = dict_get(&dict, ktype, va_arg(varg, double));
 			#else
-				query = dict_get(dict, ktype, va_arg(varg, long double));
+				query = dict_get(&dict, ktype, va_arg(varg, long double));
 			#endif
 			break;
-		case BOOL: query = dict_get(dict, ktype, va_arg(varg, int)); break;
+		case BOOL: query = dict_get(&dict, ktype, va_arg(varg, int)); break;
 	}
 	va_end(varg);
 	if(query != NULL) { return true; }
@@ -582,6 +371,7 @@ void dict_printf(dict_t* dict, const char* sep, char end) {
 			case STRING: printf("\"%s\": ", dict->kstring); break;
 			case CHARACTER: printf("'%c': ", dict->kint); break;
 			case FLOAT: printf("%Lf: ", dict->kfloat); break;
+			case BOOL: printf("%s: ", dict->integer ? "true" : "false"); break;
 		}
 		switch(dict->type) {
 			case INTEGER: printf("%d", dict->integer); break;
@@ -589,7 +379,8 @@ void dict_printf(dict_t* dict, const char* sep, char end) {
 			case CHARACTER: printf("'%c'", dict->integer); break;
 			case FLOAT: printf("%Lf", dict->floatt); break;
 			case LIST: list_printf(dict->list, sep, end); break;
-			case DICT: dict_printf(dict->left, sep, end); break;
+			case DICT: dict_printf(dict->dict, sep, end); break;
+			case BOOL: printf("%s", dict->integer ? "true" : "false"); break;
 		}
 		if(dict->right != NULL) {
 			printf("%s", sep);
@@ -607,6 +398,7 @@ void dict_print_optype(dict_t* dict, int optype) {
 			case STRING: printf("\"%s\": ", dict->kstring); break;
 			case CHARACTER: printf("'%c': ", dict->kint); break;
 			case FLOAT: printf("%Lf: ", dict->kfloat); break;
+			case BOOL: printf("%s: ", dict->kint ? "true" : "false"); break;
 		}
 		switch(dict->type) {
 			case INTEGER: printf("%d", dict->integer); break;
@@ -614,7 +406,8 @@ void dict_print_optype(dict_t* dict, int optype) {
 			case CHARACTER: printf("'%c'", dict->integer); break;
 			case FLOAT: printf("%Lf", dict->floatt); break;
 			case LIST: list_printf(dict->list, ", ", '\0'); break;
-			case DICT: dict_printf(dict->left, ", ", '\0'); break;
+			case DICT: dict_printf(dict->dict, ", ", '\0'); break;
+			case BOOL: printf("%s", dict->integer ? "true" : "false"); break;
 		}
 		if(optype == 1) {
 			break;
@@ -629,8 +422,10 @@ void dict_print_optype(dict_t* dict, int optype) {
 
 void dict_printq(dict_t* dict) {
 	if(dict == NULL) { return; }
-	if(dict->type == INTEGER || dict->type == BOOL) {
+	if(dict->type == INTEGER) {
 		printf("%d\n", dict->integer);
+	} else if(dict->type == BOOL) {
+		printf("%s\n", dict->integer ? "true" : "false");
 	} else if(dict->type == CHARACTER) {
 		printf("'%c'\n", dict->integer);
 	} else if(dict->type == STRING) {
@@ -640,15 +435,37 @@ void dict_printq(dict_t* dict) {
 	} else if(dict->type == LIST) {
 		list_print(dict->list);
 	} else if(dict->type == DICT) {
-		dict_print(dict->left);
+		dict_print(dict->dict);
 	}
 }
 // TODO Fix dict_print
 void dict_print(dict_t* dict) {
 	dict_print_optype(dict, P_ALL);
 }
+void dict_safe_free(dict_t** dict) {
+	while((*dict) != NULL) {
+		if((*dict)->kstring != NULL) {
+			free((*dict)->kstring);
+			(*dict)->kstring = NULL;
+		}
+		if((*dict)->string != NULL) {
+			free((*dict)->string);
+			(*dict)->string = NULL;
+		}
+		if((*dict)->list != NULL) {
+			list_safe_free(&(*dict)->list);
+			(*dict)->list = NULL;
+		}
+		if((*dict)->dict != NULL) {
+			dict_safe_free(&(*dict)->dict);
+			(*dict)->dict = NULL;
+		}
+		dict_t* temp = (*dict)->right;
+		free(*dict); *dict = NULL;
+		*dict = temp;
+	}
+}
 
-// TODO fix dict_free
 void dict_free(dict_t* dict) {
 	while(dict != NULL) {
 		if(dict->kstring != NULL) {
@@ -663,12 +480,12 @@ void dict_free(dict_t* dict) {
 			list_free(dict->list);
 			dict->list = NULL;
 		}
-		if(dict->left != NULL) {
-			dict_free(dict->left);
-			dict->left = NULL;
+		if(dict->dict != NULL) {
+			dict_free(dict->dict);
+			dict->dict = NULL;
 		}
 		dict_t* temp = dict->right;
-		free(dict);
+		free(dict); dict = NULL;
 		dict = temp;
 	}
 }

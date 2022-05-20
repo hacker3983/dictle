@@ -1,4 +1,4 @@
-#include "list.h"
+#include "dictionary.h"
 int LIST_RECURSION = 0;
 
 list_t* list_create(int type, ...) {
@@ -34,9 +34,17 @@ list_t* list_create(int type, ...) {
 				new_node->floatt = va_arg(varg, long double);
 			#endif
 			break;
+		case BOOL:
+			new_node->type = BOOL;
+			new_node->integer = (bool)va_arg(varg, int);
+			break;
 		case LIST:
 			new_node->type = LIST;
 			new_node->list = va_arg(varg, list_t*);
+			break;
+		case DICT:
+			new_node->type = DICT;
+			new_node->dict = va_arg(varg, dict_t*);
 			break;
 	}
 	new_node->tail = new_node;
@@ -59,14 +67,16 @@ void list_insert(list_t** list, int type, ...) {
 				new_node = list_create(type, va_arg(varg, long double));
 			#endif
 			break;
-		case LIST: new_node = list_create(type, va_arg(varg, list_t*)); break;	
+		case BOOL: new_node = list_create(type, va_arg(varg, int)); break;
+		case LIST: new_node = list_create(type, va_arg(varg, list_t*)); break;
+		case DICT: new_node = list_create(type, va_arg(varg, list_t*)); break;
 	}
 	if(*list == NULL) {
 		*list = new_node;
 		return;
 	}
-	new_node->next = *list;
-	new_node->tail = new_node->next->tail;
+	new_node->right = *list;
+	new_node->tail = new_node->right->tail;
 	*list = new_node;
 	va_end(varg);
 }
@@ -86,14 +96,16 @@ void list_append(list_t** list, int type, ...) {
 				new_node = list_create(type, va_arg(varg, long double));
 			#endif
 			break;
-		case LIST: new_node = list_create(type, va_arg(varg, list_t*));	
+		case BOOL: new_node = list_create(type, va_arg(varg, int)); break;
+		case LIST: new_node = list_create(type, va_arg(varg, list_t*)); break;
+		case DICT: new_node = list_create(type, va_arg(varg, dict_t*)); break;
 	}
 	va_end(varg);
 	if(*list == NULL) {
 		*list = new_node;
 		return;
 	}
-	temp->tail->next = new_node;
+	temp->tail->right = new_node;
 	temp->tail = new_node;
 	va_end(varg);
 }
@@ -113,7 +125,9 @@ void list_insert_optype(list_t** list, int optype, int type, ...) {
 					list_insert(list, type, va_arg(varg, long double));
 				#endif
 				break;
-			case LIST: list_insert(list, type, va_arg(varg, list_t*));	
+			case BOOL: list_insert(list, type, va_arg(varg, int)); break;
+			case LIST: list_insert(list, type, va_arg(varg, list_t*)); break;
+			case DICT: list_insert(list, type, va_arg(varg, dict_t*)); break;
 		}
 		va_end(varg);
 		return;
@@ -129,7 +143,9 @@ void list_insert_optype(list_t** list, int optype, int type, ...) {
 				list_append(list, type, va_arg(varg, long double));
 			#endif
 			break;
-		case LIST: list_append(list, type, va_arg(varg, list_t*));
+		case BOOL: list_append(list, type, va_arg(varg, int)); break;
+		case LIST: list_append(list, type, va_arg(varg, list_t*)); break;
+		case DICT: list_append(list, type, va_arg(varg, dict_t*)); break;
 	}
 	va_end(varg);
 }
@@ -153,11 +169,12 @@ void list_insertf(list_t** list, int optype, char* format, ...) {
 							list_insert_optype(list, optype, FLOAT, va_arg(varg, long double));
 						#endif
 						break;
+					case 'b': list_insert_optype(list, optype, LIST, va_arg(varg, int)); break;
 					case 'l': list_insert_optype(list, optype, LIST, va_arg(varg, list_t*)); break;
+					case 'D': list_insert_optype(list, optype, DICT, va_arg(varg, dict_t*)); break;
 				}
 				continue;
 			}
-		//	list_adderr(list, FORMAT_ERROR, "Expected conversion specifier after \033[1m'%%' but found nothing\n");
 			i--;
 		}
 		i++;
@@ -175,13 +192,13 @@ void list_adderr(list_t** list, int error_type, const char* format, ...) {
 	}
 	char* err_msg = calloc(1, sizeof(char*)), *str_errtype = NULL;
 	switch(error_type) {
-		case FORMAT_ERROR:
+		case EFORMAT:
 			str_errtype = "\033[1m\033[31mFormatError\033[37m:";
 			size += strlen(str_errtype);
 			err_msg = calloc(size, sizeof(char*));
 			strcpy(err_msg, str_errtype);
 			break;
-		case TYPE_ERROR:
+		case ETYPE:
 			str_errtype = "\033[1m\033[31mTypeError\033[37m:";
 			size += strlen(str_errtype);
 			err_msg = calloc(size, sizeof(char*));
@@ -212,15 +229,50 @@ void* list_index(list_t* list, size_t index) {
 						return (double*)&list->floatt;
 					#endif
 					return &list->floatt;
+				case BOOL:
+					return &list->integer;
 				case LIST:
 					return list->list;
+				case DICT:
+					return list->dict;
 			}
 		}
 		i++;
-		list = list->next;
+		list = list->right;
 	}
 	return NULL;
 }
+
+string_t list_tostring(list_t* list) {
+	string_t string, result = {0};
+	string_init(&string, "[");
+	while(list != NULL) {
+		switch(list->type) {
+			case INTEGER: string_concat(&string, "%d", list->integer);   break; 
+			case STRING:  string_concat(&string, "\"%s\"", list->string);    break;
+			case CHARACTER: string_concat(&string, "'%c'", list->integer); break;
+			case FLOAT: string_concat(&string, "%f", list->floatt);      break;
+			case BOOL: string_concat(&string, "\"%s\"", list->integer ? "true" : "false"); break;
+			case LIST:
+				    result = list_tostring(list->list);
+				    string_concat(&string, "%S", result);
+				    string_free(&result);
+				    break;
+			case DICT:
+				    result = dict_tostring(list->dict);
+				    string_concat(&string, "%S", result);
+				    string_free(&result);
+				    break;
+		}
+		if(list->right != NULL) {
+			string_append(&string, ", ");
+		}
+		list = list->right;
+	}
+	string_push_char(&string, ']');
+	return string;
+}
+
 
 int list_geterror(list_t* list) {
 	if(list->error != NULL) {
@@ -240,14 +292,14 @@ void list_printf(list_t* list, const char* sep, char end) {
 			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
 			case CHARACTER: printf("'%c'", list->integer); break;
 			case FLOAT: printf("%Lf", list->floatt); break;
-			case LIST:
-				__list_print_recursive(list, sep, end, false);
-				break;
+			case BOOL: printf("%s", list->integer ? "true" : "false"); break;
+			case LIST: list_printf(list->list, ", ", '\0'); break;
+			case DICT: dict_printf(list->dict, sep, end); break;
 		}
-		if(list->next != NULL) {
+		if(list->right != NULL) {
 			printf("%s", sep);
 		}
-		list = list->next;
+		list = list->right;
 	}
 	printf("]%c", end);
 }
@@ -260,37 +312,16 @@ void list_print(list_t* list) {
 			case STRING: (list->string != NULL) ? printf("\"%s\"", list->string) : printf("\"\""); break;
 			case CHARACTER: printf("'%c'", list->integer); break;
 			case FLOAT: printf("%Lf", list->floatt); break;
-			case LIST:
-				__list_print_recursive(list->list, ", ", '\0', false);
-				break;
+			case BOOL: printf("%s", list->integer ? "true" : "false"); break;
+			case LIST: list_printf(list->list, ", ", '\0'); break;
+			case DICT: dict_printf(list->dict, ", ", '\0'); break;
 		}
-		if(list->next != NULL) {
+		if(list->right != NULL) {
 			printf(", ");
 		}
-		list = list->next;
+		list = list->right;
 	}
 	printf("]\n");
-}
-
-list_t* __list_print_recursive(list_t* list, const char* sep, char end, int pb) {
-	if(pb) printf("[");
-	while(list != NULL) {
-		switch(list->type) {
-			case INTEGER: printf("%d", list->integer); break;
-			case STRING: printf("\"%s\"", list->string); break;
-			case CHARACTER: printf("'%d'", list->integer); break;
-			case FLOAT: printf("%Lf", list->floatt); break;
-			case LIST:
-				__list_print_recursive(list->list, sep, end, true);
-				break;
-		}
-		if(list->next != NULL) {
-			printf("%s", sep);
-		}
-		list = list->next;
-	}
-	if(pb) printf("]%c", end);
-	return list;
 }
 
 bool list_streq(const char* s1, const char* s2) {
@@ -303,26 +334,34 @@ bool list_streq(const char* s1, const char* s2) {
 
 void list_safe_free(list_t** list) {
 	while(*list != NULL) {
-		list_t* temp = (*list)->next;
+		list_t* temp = (*list)->right;
 		if((*list)->type == STRING && (*list)->string != NULL) { free((*list)->string); (*list)->string = NULL; }
 		if((*list)->type == LIST && (*list)->list != NULL) {
-			list_free((*list)->list);
+			list_safe_free(&(*list)->list); (*list)->list = NULL;
+		}
+		if((*list)->type == DICT && (*list)->dict != NULL) {
+			dict_safe_free(&(*list)->dict); (*list)->dict = NULL;
 		}
 		if((*list)->error != NULL) { free((*list)->error); }
-		if(*list != NULL) { free(*list); *list = NULL; }
+		free(*list); *list = NULL;
 		*list = temp;
 	}
 }
 
 void list_free(list_t* list) {
 	while(list != NULL) {
-		list_t* temp = list->next;
-		if(list->type == STRING && list->string != NULL) { free(list->string); }
+		list_t* temp = list->right;
+		if(list->type == STRING && list->string != NULL) { free(list->string); list->string = NULL; }
 		if(list->type == LIST && list->list != NULL) {
 			list_free(list->list);
+			list->list = NULL;
+		}
+		if(list->type == DICT && list->dict != NULL) {
+			dict_free(list->dict);
+			list->dict = NULL;
 		}
 		if(list->error != NULL) { free(list->error); }
-		if(list != NULL) { free(list); }
+		free(list); list = NULL;
 		list = temp;
 	}
 }

@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
-		printf("please specify a integer to reverse\n");
+		printf("please specify a integer to split\n");
 		return -1;
 	}
 	list_t* list = NULL;
