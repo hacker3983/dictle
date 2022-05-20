@@ -17,7 +17,7 @@ int main() {
 ```
 # Todo
 * Infinite recursion
+* Implement floating point parsing for string to dictionary
 
 # Upcoming features
-* dictionaries within lists
 * Note: more features coming soon
