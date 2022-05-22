@@ -9,10 +9,10 @@ dictle is a dictionary written in c inspired by python.
 #include <dictle/dictionary.h>
 
 int main() {
-	dict_t* persons = NULL,
-		*person = dict_create(STRING, INTEGER, "John"),
-		*person2 = dict_create(STRING;
-	// creates and returns a pointer to a dictionary
+	dict_t* person = dict_create(STRING, STRING, "Name", "John");
+	dict_append(&person, STRING, INTEGER, "Age", 50);
+	dict_print(person);
+
 }
 ```
 # Todo
