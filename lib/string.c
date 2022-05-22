@@ -124,10 +124,11 @@ void strings_init(strings_t* strings) {
 void strings_append(strings_t* strings, char* buff) {
 	if(buff != NULL) {
 		strings->array[strings->size] = calloc(strlen(buff), sizeof(char*));
-		strcpy(strings->array[strings->size++], buff);
+		strcpy(strings->array[strings->size], buff);
 	} else {
 		strings->array[strings->size] = calloc(1, sizeof(char*));
 	}
+	strings->size++;
 	strings->array = realloc(strings->array, (strings->size+1) * sizeof(char*));
 	strings->array[strings->size] = NULL;
 }

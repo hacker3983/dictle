@@ -285,6 +285,13 @@ dict_t* dict_query(dict_t** result, dict_t** dict, int ktype, ...) {
 						}
 						va_end(varg);
 						return *result;
+					} else if(ldouble_eq(dict_ref->kfloat, key_float)) {
+						*result = dict_ref;
+						if(dict_ref->type == DICT) {
+							*result = dict_ref;
+						}
+						va_end(varg);
+						return *result;
 					}
 					break;
 				case BOOL:

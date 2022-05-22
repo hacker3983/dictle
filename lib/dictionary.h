@@ -6,6 +6,7 @@
 #include <string.h>
 #include "list.h"
 #include "string.h"
+#include "numbers.h"
 #define DICT_MAX_RECURSION 256 // the maximum recursion amount that dict_print and list_print should do
 extern int DICT_RECURSION;
 

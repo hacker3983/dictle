@@ -33,7 +33,7 @@ string_t get_char(size_t* i, const char* fmt);
 string_t get_int(size_t* i, const char* fmt);
 strings_t string_tokenize(const char* string);
 char* parse_string(strings_t tokens, size_t* i);
-int parse_int(strings_t tokens, size_t* i);
+void parse_num(const char* str, int* integer, long double* floatt, int* i);
 bool parse_bool(strings_t tokens, size_t* i);
 int parse_char(strings_t tokens, size_t* i);
 #endif

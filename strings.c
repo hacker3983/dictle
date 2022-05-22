@@ -8,6 +8,7 @@ int main() {
 	strings_append(&strings, "Is");
 	strings_append(&strings, "A");
 	strings_append(&strings, "String");
+	printf("size: %ld\n", strings.size);
 	strings_print(strings);
 	strings_free(&strings);
 	return 0;
